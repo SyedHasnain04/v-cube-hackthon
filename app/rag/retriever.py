@@ -44,11 +44,9 @@ def load_index_and_metadata(force_reload: bool = False):
     chunks_file = index_dir_path / "chunks.json"
 
     if not faiss_file.exists() or not chunks_file.exists():
-        raise RuntimeError(
-            f"FAISS index or metadata file not found at {INDEX_DIR}.\n"
-            "Please run the ingestion script first:\n"
-            "  python -m app.rag.ingest"
-        )
+        from app.rag.ingest import build_index
+        print("[Athenaeum] Index files not found. Auto-building index from docs...")
+        build_index()
 
     try:
         index = faiss.read_index(str(faiss_file))

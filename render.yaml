@@ -1,0 +1,9 @@
+services:
+  - type: web
+    name: athenaeum-rag
+    runtime: python
+    buildCommand: pip install -r requirements.txt && python -m app.rag.ingest
+    startCommand: uvicorn app.main:app --host 0.0.0.0 --port $PORT
+    envVars:
+      - key: GEMINI_API_KEY
+        sync: false
