@@ -1,0 +1,76 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="description" content="Athenaeum — An intelligent RAG assistant for your library. Ask questions regarding membership, borrowing, overdue policies, and digital resources.">
+  <title>Athenaeum — Library Assistant</title>
+  <!-- FastAPI mount: app.mount("/static", StaticFiles(directory="static"), name="static") -->
+  <link rel="stylesheet" href="/static/style.css">
+</head>
+<body>
+  <!-- Atmospheric Video Background -->
+  <video class="video-bg" autoplay loop muted playsinline>
+    <source src="https://d8j0ntlcm91z4.cloudfront.net/user_38xzZboKViGWJOttwIXH07lWA1P/hf_20260314_131748_f2ca2a28-fed7-44c8-b9a9-bd9acdd5ec31.mp4" type="video/mp4">
+  </video>
+  <div class="video-overlay"></div>
+
+  <!-- Main Application Wrapper -->
+  <div class="app-container">
+    <!-- Navigation Bar -->
+    <header class="nav-wrapper">
+      <nav class="nav-bar liquid-glass" aria-label="Main Navigation">
+        <a href="/" class="nav-logo" id="nav-logo">Athenaeum</a>
+        <div class="nav-status" id="system-status" aria-live="polite">
+          <span class="status-dot pulse" id="status-dot"></span>
+          <span id="status-text">Online</span>
+        </div>
+      </nav>
+    </header>
+
+    <!-- Header / Intro (Compact) -->
+    <section class="hero-header">
+      <h1 class="animate-fade-rise">Ask anything about the library.</h1>
+      <p class="animate-fade-rise-delay">
+        Membership rules, borrowing procedures, overdue policies, and digital resources — answered from the library's own documentation.
+      </p>
+    </section>
+
+    <!-- Chat Interface -->
+    <main class="chat-section">
+      <div class="chat-panel liquid-glass" id="chat-panel" role="log" aria-live="polite">
+        <div class="chat-empty-state" id="empty-state">
+          No messages yet. Ask a question below to get started.
+        </div>
+      </div>
+
+      <!-- Input Bar Form -->
+      <form class="input-form" id="chat-form" autocomplete="off">
+        <div class="input-bar liquid-glass">
+          <input
+            type="text"
+            id="chat-input"
+            class="chat-input"
+            placeholder="e.g. How many books can I borrow at once?"
+            required
+            aria-label="Ask a question about the library"
+          />
+          <button type="submit" class="send-btn" id="send-btn" aria-label="Send message">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round">
+              <line x1="22" y1="2" x2="11" y2="13"></line>
+              <polygon points="22 2 15 22 11 13 2 9 22 2"></polygon>
+            </svg>
+          </button>
+        </div>
+      </form>
+    </main>
+
+    <!-- Footer -->
+    <footer class="app-footer">
+      Athenaeum — grounded answers from your library's documentation.
+    </footer>
+  </div>
+
+  <script src="/static/script.js"></script>
+</body>
+</html>
