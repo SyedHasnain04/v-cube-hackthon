@@ -36,8 +36,83 @@
       </p>
     </section>
 
+    <!-- Architecture & RAG Explanation Briefing -->
+    <section class="rag-briefing liquid-glass animate-fade-rise-delay">
+      <div class="briefing-badge">Architecture & Verification</div>
+      <h2 class="briefing-title">Why Retrieval-Augmented Generation (RAG)?</h2>
+      <p class="briefing-desc">
+        General AI models hallucinate circulation limits and fees. <strong>Athenaeum</strong> searches verified policy documentation using vector embeddings before formulating an answer, delivering grounded facts with verifiable citations and match scores.
+      </p>
+
+      <div class="pipeline-grid">
+        <div class="pipeline-card">
+          <div class="pipeline-step">01</div>
+          <div class="pipeline-content">
+            <h3>Document Ingestion</h3>
+            <p>Official library policies chunked with section header hierarchy preserved.</p>
+          </div>
+        </div>
+        <div class="pipeline-card">
+          <div class="pipeline-step">02</div>
+          <div class="pipeline-content">
+            <h3>Vector Retrieval</h3>
+            <p><code>all-MiniLM-L6-v2</code> embeddings & <strong>FAISS</strong> cosine similarity locate exact clauses.</p>
+          </div>
+        </div>
+        <div class="pipeline-card">
+          <div class="pipeline-step">03</div>
+          <div class="pipeline-content">
+            <h3>Guarded Synthesis</h3>
+            <p><strong>Gemini 2.5 Flash</strong> synthesizes with strict guardrails and transparent match citations.</p>
+          </div>
+        </div>
+      </div>
+
+      <!-- Example Questions Explorer -->
+      <div class="example-questions-box">
+        <div class="example-questions-header">
+          <span>Click any example to test:</span>
+          <div class="category-tags">
+            <span class="category-tag">💳 Membership</span>
+            <span class="category-tag">📚 Borrowing</span>
+            <span class="category-tag">⏳ Overdue</span>
+            <span class="category-tag">📱 Digital</span>
+          </div>
+        </div>
+
+        <div class="interactive-questions-list">
+          <button type="button" class="ask-chip-row">
+            <span>How many books can I borrow at once?</span>
+            <span class="category-pill">Borrowing</span>
+          </button>
+          <button type="button" class="ask-chip-row">
+            <span>How do I register for a library card and what documents are required?</span>
+            <span class="category-pill">Membership</span>
+          </button>
+          <button type="button" class="ask-chip-row">
+            <span>Are there late fines for returning books overdue?</span>
+            <span class="category-pill">Overdue</span>
+          </button>
+          <button type="button" class="ask-chip-row">
+            <span>How do I access digital e-books and audiobooks on Libby?</span>
+            <span class="category-pill">Digital</span>
+          </button>
+        </div>
+      </div>
+
+      <div class="briefing-action-row">
+        <div class="briefing-note">
+          <span class="pulse-mini-dot"></span>
+          <span>Engine warmup active in background — ready for immediate responses.</span>
+        </div>
+        <a href="#chat-section" class="scroll-to-chat-btn" id="start-asking-btn">
+          Open Chat Assistant ↓
+        </a>
+      </div>
+    </section>
+
     <!-- Chat Interface -->
-    <main class="chat-section">
+    <main class="chat-section" id="chat-section">
       <div class="chat-panel liquid-glass" id="chat-panel" role="log" aria-live="polite">
         <div class="chat-empty-state" id="empty-state">
           <p>No messages yet. Ask a question below or choose a topic to begin:</p>

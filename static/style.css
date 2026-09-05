@@ -201,6 +201,229 @@ html, body {
   line-height: 1.5;
 }
 
+/* RAG Briefing & Architecture Section */
+.rag-briefing {
+  width: 100%;
+  max-width: 720px;
+  margin: 0 auto 2.25rem;
+  border-radius: 24px;
+  padding: 1.85rem 2rem;
+  display: flex;
+  flex-direction: column;
+  gap: 1.25rem;
+}
+
+.briefing-badge {
+  align-self: flex-start;
+  font-family: var(--font-body);
+  font-size: 0.72rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  padding: 0.25rem 0.65rem;
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.08);
+  border: 1px solid rgba(255, 255, 255, 0.15);
+  color: hsl(var(--foreground));
+}
+
+.briefing-title {
+  font-family: var(--font-display);
+  font-size: clamp(1.4rem, 3vw, 1.85rem);
+  font-weight: 400;
+  color: hsl(var(--foreground));
+  line-height: 1.2;
+}
+
+.briefing-desc {
+  font-size: 0.92rem;
+  color: hsl(var(--muted-foreground));
+  line-height: 1.6;
+}
+
+.briefing-desc strong {
+  color: hsl(var(--foreground));
+}
+
+/* 3-Step Pipeline Grid */
+.pipeline-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 0.85rem;
+  margin-top: 0.25rem;
+}
+
+.pipeline-card {
+  background: rgba(255, 255, 255, 0.03);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: 16px;
+  padding: 1rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+  transition: transform 0.2s ease, border-color 0.2s ease;
+}
+
+.pipeline-card:hover {
+  transform: translateY(-2px);
+  border-color: rgba(255, 255, 255, 0.2);
+}
+
+.pipeline-step {
+  font-family: var(--font-display);
+  font-size: 1.15rem;
+  font-style: italic;
+  color: hsl(var(--muted-foreground));
+  opacity: 0.85;
+}
+
+.pipeline-content h3 {
+  font-family: var(--font-body);
+  font-size: 0.88rem;
+  font-weight: 600;
+  color: hsl(var(--foreground));
+  margin-bottom: 0.25rem;
+}
+
+.pipeline-content p {
+  font-size: 0.78rem;
+  color: hsl(var(--muted-foreground));
+  line-height: 1.45;
+}
+
+.pipeline-content code {
+  font-size: 0.74rem;
+  background: rgba(255, 255, 255, 0.08);
+  padding: 0.1rem 0.3rem;
+  border-radius: 4px;
+  color: hsl(var(--foreground));
+}
+
+/* Categorized Example Questions Box */
+.example-questions-box {
+  background: rgba(255, 255, 255, 0.02);
+  border: 1px solid rgba(255, 255, 255, 0.06);
+  border-radius: 16px;
+  padding: 1.15rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.85rem;
+}
+
+.example-questions-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+}
+
+.example-questions-header span {
+  font-size: 0.82rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: hsl(var(--muted-foreground));
+}
+
+.category-tags {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.4rem;
+}
+
+.category-tag {
+  font-size: 0.72rem;
+  padding: 0.2rem 0.55rem;
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.06);
+  color: hsl(var(--muted-foreground));
+}
+
+.interactive-questions-list {
+  display: flex;
+  flex-direction: column;
+  gap: 0.45rem;
+}
+
+.ask-chip-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0.6rem 0.85rem;
+  border-radius: 10px;
+  background: rgba(255, 255, 255, 0.04);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  color: hsl(var(--foreground));
+  font-size: 0.84rem;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  text-align: left;
+  width: 100%;
+}
+
+.ask-chip-row:hover {
+  background: rgba(255, 255, 255, 0.1);
+  border-color: rgba(255, 255, 255, 0.25);
+  transform: translateX(3px);
+}
+
+.ask-chip-row span.category-pill {
+  font-size: 0.7rem;
+  padding: 0.15rem 0.45rem;
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.08);
+  color: hsl(var(--muted-foreground));
+  margin-left: 0.5rem;
+  white-space: nowrap;
+}
+
+/* Action & Status Row */
+.briefing-action-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 1rem;
+  padding-top: 0.5rem;
+  border-top: 1px solid rgba(255, 255, 255, 0.08);
+}
+
+.briefing-note {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.55rem;
+  font-size: 0.78rem;
+  color: hsl(var(--muted-foreground));
+}
+
+.pulse-mini-dot {
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  background: var(--status-online);
+  box-shadow: 0 0 8px rgba(16, 185, 129, 0.6);
+  animation: pulse-dot 2s infinite;
+}
+
+.scroll-to-chat-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+  padding: 0.6rem 1.25rem;
+  border-radius: 999px;
+  background: hsl(var(--primary));
+  color: hsl(var(--primary-foreground));
+  font-size: 0.84rem;
+  font-weight: 500;
+  text-decoration: none;
+  transition: transform 0.15s ease, opacity 0.2s ease;
+}
+
+.scroll-to-chat-btn:hover {
+  transform: scale(1.03);
+}
+
 /* Main Content Wrapper */
 .chat-section {
   width: 100%;
@@ -560,6 +783,26 @@ html, body {
 
   .hero-header h1 {
     font-size: 2.15rem;
+  }
+
+  .rag-briefing {
+    padding: 1.35rem 1.15rem;
+    margin-bottom: 1.5rem;
+    border-radius: 20px;
+  }
+
+  .pipeline-grid {
+    grid-template-columns: 1fr;
+    gap: 0.65rem;
+  }
+
+  .briefing-action-row {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .scroll-to-chat-btn {
+    justify-content: center;
   }
 
   .chat-panel {

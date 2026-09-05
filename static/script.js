@@ -333,18 +333,37 @@ chatForm.addEventListener('submit', (e) => {
   sendMessage(query);
 });
 
-// Setup Click Handlers on Suggestion Chips
+// Setup Click Handlers on Suggestion Chips and Briefing Example Rows
 function setupSuggestionChips() {
-  const chips = document.querySelectorAll('.suggestion-chip');
-  chips.forEach((chip) => {
+  const allChips = document.querySelectorAll('.suggestion-chip, .ask-chip-row');
+  allChips.forEach((chip) => {
     chip.addEventListener('click', () => {
-      const question = chip.textContent.trim();
+      // Find question text (ignoring category pill)
+      const textSpan = chip.querySelector('span:first-child');
+      const question = (textSpan ? textSpan.textContent : chip.textContent).trim();
       if (question) {
+        // Smooth scroll to chat section
+        const chatSection = document.getElementById('chat-section');
+        if (chatSection) {
+          chatSection.scrollIntoView({ behavior: 'smooth' });
+        }
         chatInput.value = question;
         sendMessage(question);
       }
     });
   });
+
+  const startBtn = document.getElementById('start-asking-btn');
+  if (startBtn) {
+    startBtn.addEventListener('click', (e) => {
+      e.preventDefault();
+      const chatSection = document.getElementById('chat-section');
+      if (chatSection) {
+        chatSection.scrollIntoView({ behavior: 'smooth' });
+      }
+      chatInput.focus();
+    });
+  }
 }
 
 // Initialization
