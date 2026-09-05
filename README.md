@@ -1,33 +1,21 @@
-# Athenaeum — RAG Library Assistant UI
+# Athenaeum — RAG Library Assistant
 
-A single-page RAG chat interface called **"Athenaeum"** featuring a dimmed looping cinematic background video, liquid glassmorphic panels, and typography designed for library documentation queries.
-
-Built with **plain HTML, Vanilla CSS, and Vanilla JavaScript** (no framework, no build step) to be served as static files by a backend (e.g., FastAPI).
+**Athenaeum** is an end-to-end Retrieval-Augmented Generation (RAG) assistant designed to explain public library services (membership rules, borrowing procedures, overdue policies, and digital resources) grounded strictly in library documentation.
 
 ---
 
-## 🏛 UI Features & Design System
+## 🏛 Architecture & Tech Stack
 
-- **Atmospheric Video Background**: Fullscreen looping library video muted and dimmed with a dark overlay (`rgba(6, 20, 33, 0.82)`) ensuring chat readability.
-- **Liquid Glass Effect (`.liquid-glass`)**: Glass panels with multi-layer backdrop blur, luminosity blend-mode, and top/bottom gradient borders.
-- **Typography**: Google Fonts pairing — **Instrument Serif** for display/headings and **Inter** (weights 400/500) for body and UI elements.
-- **Color Theme**: Dark navy palette utilizing HSL CSS variables (`--background: 201 100% 13%`, `--foreground: 0 0% 100%`, etc.).
-- **Live Health Status**: Real-time heartbeat checking the `/health` endpoint to reflect status in the navigation bar pill.
-- **Collapsible Grounded Sources**: Expandable glass cards under assistant messages displaying document name, percentage match badge, and truncated snippets.
-- **Micro-Animations**: Staggered `animate-fade-rise` animations on initial hero elements and each newly inserted chat message.
-- **Pure Zero-Dependency Frontend**: 100% standard web technologies — no React, Vite, Tailwind, or icon libraries.
-
----
-
-## 📡 Expected Backend Contract
-
-The UI communicates with the backend using the following standard endpoints:
-
-| Method | Endpoint | Description | Payload / Response |
-| :--- | :--- | :--- | :--- |
-| `GET` | `/health` | Live health check | `{ "status": "ok" }` |
-| `POST` | `/chat` | RAG query | **Body:** `{ "query": "string" }`<br>**Response:** `{ "answer": "string", "sources": [{ "doc": "...", "snippet": "...", "score": 0.95 }] }` |
-| `GET` | `/static/*` | Static files | Serves `index.html`, `style.css`, `script.js` |
+- **Frontend**: Plain HTML5, Vanilla CSS, and Vanilla JavaScript (zero framework, zero build step) located in `static/`.
+  - Dimmed cinematic looping video background.
+  - Liquid glassmorphic panels (`.liquid-glass`) with luminosity blend-mode and gradient borders.
+  - Google Fonts pairing (*Instrument Serif* & *Inter*).
+  - Collapsible source citations and live status heartbeat.
+- **Backend Framework**: **FastAPI** + **Uvicorn** serving both API endpoints and the static UI.
+- **Embeddings**: `sentence-transformers` using `all-MiniLM-L6-v2` (local, fast, free, no external API calls).
+- **Vector Index**: **FAISS** (`IndexFlatIP` with L2-normalized vectors for exact cosine similarity).
+- **LLM Synthesis**: **Google Gemini** (`gemini-2.5-flash`) via `google.generativeai`.
+- **Secrets Management**: `python-dotenv` loading `GEMINI_API_KEY` from `.env`.
 
 ---
 
@@ -35,9 +23,67 @@ The UI communicates with the backend using the following standard endpoints:
 
 ```text
 v-cube-hackthon/
-├── README.md            # Documentation & contract specifications
-└── static/
-    ├── index.html       # Single-page interface with video background & layout
-    ├── style.css        # CSS variables, liquid glass effect, responsive design
-    └── script.js        # Vanilla JS for API requests, health check & UI rendering
+├── app/
+│   ├── main.py              # FastAPI app, routes, CORS, and static file mount
+│   ├── config.py            # Environment loading & pipeline constants
+│   ├── rag/
+│   │   ├── __init__.py
+│   │   ├── ingest.py        # Markdown/text loading, header-based chunking, FAISS builder
+│   │   ├── retriever.py     # Embedding query & FAISS top-k similarity search
+│   │   └── generator.py     # Prompt assembly with guardrails & Gemini answer generation
+│   └── data/
+│       ├── docs/            # Library policy documents (.md / .txt)
+│       └── index/           # faiss.index & chunks.json (generated, gitignored)
+├── static/
+│   ├── index.html           # Single-page interface with video background & layout
+│   ├── style.css            # Dark navy theme, liquid glass effect, responsive styles
+│   └── script.js            # Frontend logic for API calls, health check & UI rendering
+├── .env.example             # Template for GEMINI_API_KEY
+├── .gitignore
+├── requirements.txt         # Backend Python dependencies
+└── README.md
 ```
+
+---
+
+## 📡 API Contract
+
+| Method | Endpoint | Description | Payload / Response |
+| :--- | :--- | :--- | :--- |
+| `GET` | `/` | Root interface | Serves `static/index.html` |
+| `GET` | `/health` | Health check | `{ "status": "ok" }` |
+| `POST` | `/chat` | RAG query | **Body:** `{ "query": "string" }`<br>**Response:** `{ "answer": "string", "sources": [{ "doc": "...", "snippet": "...", "score": 0.95 }] }` |
+| `POST` | `/ingest` | Index rebuild | `{ "status": "ok", "chunks_indexed": 12 }` |
+| `GET` | `/static/*` | Static assets | Serves `index.html`, `style.css`, `script.js` |
+
+---
+
+## 🚀 Local Development Setup
+
+### 1. Configure Environment
+Copy `.env.example` to `.env` and insert your Gemini API key:
+```bash
+cp .env.example .env
+```
+Inside `.env`:
+```env
+GEMINI_API_KEY=your_actual_gemini_api_key
+```
+
+### 2. Install Dependencies
+```bash
+pip install -r requirements.txt
+```
+
+### 3. Ingest Policy Documents
+To build or rebuild the FAISS vector index from `app/data/docs/`:
+```bash
+python -m app.rag.ingest
+```
+
+### 4. Run the Server
+```bash
+uvicorn app.main:app --reload --port 8000
+```
+
+Access the interface at: `http://localhost:8000`.

@@ -1,9 +1,22 @@
+# Python
 __pycache__/
 *.py[cod]
 *$py.class
+*.so
+.Python
+
+# Virtual Environment
 .env
 .venv
 venv/
 ENV/
+env/
+
+# IDE
 .idea/
 .vscode/
+
+# Athenaeum FAISS Index & Metadata (Generated artifacts)
+app/data/index/
+*.index
+chunks.json
