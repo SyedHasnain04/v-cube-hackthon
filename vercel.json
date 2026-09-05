@@ -2,7 +2,21 @@
   "version": 2,
   "cleanUrls": true,
   "rewrites": [
-    { "source": "/static/(.*)", "destination": "/static/$1" },
-    { "source": "/", "destination": "/static/index.html" }
+    {
+      "source": "/chat",
+      "destination": "https://athenaeum-rag.onrender.com/chat"
+    },
+    {
+      "source": "/health",
+      "destination": "https://athenaeum-rag.onrender.com/health"
+    },
+    {
+      "source": "/static/(.*)",
+      "destination": "/static/$1"
+    },
+    {
+      "source": "/",
+      "destination": "/static/index.html"
+    }
   ]
 }
