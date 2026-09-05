@@ -7,6 +7,8 @@
 let messageHistory = [];
 let isRequestInProgress = false;
 let messageCounter = 0;
+let loadingTimer = null;
+let healthRetryTimer = null;
 
 // DOM Elements
 const chatPanel = document.getElementById('chat-panel');
@@ -28,28 +30,46 @@ function escapeHtml(str) {
 }
 
 /**
- * Check backend health status
+ * Check backend health status with auto-wake retry
  */
 async function checkHealth() {
   try {
+    const controller = new AbortController();
+    const timeoutId = setTimeout(() => controller.abort(), 8000);
+
     const response = await fetch('/health', {
       method: 'GET',
-      headers: { 'Accept': 'application/json' }
+      headers: { 'Accept': 'application/json' },
+      signal: controller.signal
     });
+    clearTimeout(timeoutId);
+
     if (response.ok) {
       const data = await response.json();
       if (data && data.status === 'ok') {
         statusDot.classList.remove('offline');
         statusDot.classList.add('pulse');
         statusText.textContent = 'Online';
+        if (healthRetryTimer) {
+          clearTimeout(healthRetryTimer);
+          healthRetryTimer = null;
+        }
         return;
       }
     }
-    throw new Error('Health check returned non-ok status');
+    throw new Error('Health check non-ok status');
   } catch (err) {
     statusDot.classList.add('offline');
     statusDot.classList.remove('pulse');
-    statusText.textContent = 'Offline';
+    statusText.textContent = 'Waking engine…';
+    
+    // Automatically retry pinging every 5 seconds until Render wakes up
+    if (!healthRetryTimer) {
+      healthRetryTimer = setTimeout(() => {
+        healthRetryTimer = null;
+        checkHealth();
+      }, 5000);
+    }
   }
 }
 
@@ -197,7 +217,7 @@ function appendMessage(role, content, sources = [], isError = false) {
 }
 
 /**
- * Create and show the loading indicator
+ * Create and show the loading indicator with cold-start progressive messaging
  */
 function showLoadingIndicator() {
   const loadingRow = document.createElement('div');
@@ -213,6 +233,7 @@ function showLoadingIndicator() {
 
   const loadingText = document.createElement('div');
   loadingText.className = 'loading-indicator';
+  loadingText.id = 'loading-text';
   loadingText.textContent = 'Athenaeum is thinking…';
 
   assistantContent.appendChild(label);
@@ -221,12 +242,30 @@ function showLoadingIndicator() {
 
   chatPanel.appendChild(loadingRow);
   chatPanel.scrollTop = chatPanel.scrollHeight;
+
+  // Progressive timer for cold start transparency
+  let elapsed = 0;
+  clearInterval(loadingTimer);
+  loadingTimer = setInterval(() => {
+    elapsed += 1;
+    const textEl = document.getElementById('loading-text');
+    if (!textEl) {
+      clearInterval(loadingTimer);
+      return;
+    }
+    if (elapsed >= 25) {
+      textEl.textContent = 'Formulating grounded answer from library records…';
+    } else if (elapsed >= 6) {
+      textEl.textContent = 'Waking library engine from sleep… (~25s)';
+    }
+  }, 1000);
 }
 
 /**
  * Remove the loading indicator
  */
 function removeLoadingIndicator() {
+  clearInterval(loadingTimer);
   const loadingRow = document.getElementById('loading-row');
   if (loadingRow) {
     loadingRow.remove();
@@ -271,6 +310,11 @@ async function sendMessage(query) {
     const sources = data && Array.isArray(data.sources) ? data.sources : [];
 
     appendMessage('assistant', answer, sources);
+    
+    // Confirmed backend active
+    statusDot.classList.remove('offline');
+    statusDot.classList.add('pulse');
+    statusText.textContent = 'Online';
   } catch (error) {
     console.error('Error in /chat request:', error);
     removeLoadingIndicator();
@@ -289,9 +333,24 @@ chatForm.addEventListener('submit', (e) => {
   sendMessage(query);
 });
 
-// Run health check on initialization
+// Setup Click Handlers on Suggestion Chips
+function setupSuggestionChips() {
+  const chips = document.querySelectorAll('.suggestion-chip');
+  chips.forEach((chip) => {
+    chip.addEventListener('click', () => {
+      const question = chip.textContent.trim();
+      if (question) {
+        chatInput.value = question;
+        sendMessage(question);
+      }
+    });
+  });
+}
+
+// Initialization
 document.addEventListener('DOMContentLoaded', () => {
   checkHealth();
-  // Optional: re-check health every 45 seconds to keep status live
+  setupSuggestionChips();
+  // Keep health updated every 45s
   setInterval(checkHealth, 45000);
 });
