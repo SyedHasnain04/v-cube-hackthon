@@ -3,7 +3,6 @@ Athenaeum — RAG Library Assistant API & Static Web Server
 Built with FastAPI and Uvicorn.
 """
 
-import os
 import logging
 from typing import List
 from pathlib import Path
@@ -14,23 +13,25 @@ from fastapi.staticfiles import StaticFiles
 from fastapi.responses import FileResponse
 from pydantic import BaseModel, Field
 
-from app.config import STATIC_DIR
-from app.rag.retriever import retrieve, load_index_and_metadata, get_embedding_model
-from app.rag.generator import generate_answer
-
-# Setup Server-side Logging
+# Configure logging FIRST — retriever.py fires log_rss("after-imports") at
+# module import time; we want that captured by basicConfig, not dropped.
 logging.basicConfig(
     level=logging.INFO,
-    format="%(asctime)s [%(levelname)s] %(name)s: %(message)s"
+    format="%(asctime)s [%(levelname)s] %(name)s: %(message)s",
 )
 logger = logging.getLogger("athenaeum.api")
 
+# Import retriever AFTER basicConfig so its module-level log_rss is captured.
+from app.config import STATIC_DIR
+from app.rag import retriever as _retriever
+from app.rag.generator import generate_answer
+
 app = FastAPI(
     title="Athenaeum — RAG Library Assistant",
-    description="FastAPI backend serving the RAG retrieval pipeline and static library interface."
+    description="FastAPI backend serving the RAG retrieval pipeline and static library interface.",
 )
 
-# CORS Configuration
+# CORS — allow all origins (restrict to specific domain in production)
 app.add_middleware(
     CORSMiddleware,
     allow_origins=["*"],
@@ -39,9 +40,12 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-# Pydantic Request / Response Models
+# ---------------------------------------------------------------------------
+# Pydantic models
+# ---------------------------------------------------------------------------
+
 class ChatRequest(BaseModel):
-    query: str = Field(..., description="Patron's query regarding public library policies or services.")
+    query: str = Field(..., description="Patron's question about library policies or services.")
 
 class SourceCitation(BaseModel):
     doc: str = Field(..., description="Document source name and section.")
@@ -50,31 +54,37 @@ class SourceCitation(BaseModel):
 
 class ChatResponse(BaseModel):
     answer: str = Field(..., description="Grounded explanation for the patron.")
-    sources: List[SourceCitation] = Field(default_factory=list, description="Referenced documentation citations.")
+    sources: List[SourceCitation] = Field(default_factory=list)
 
 class IngestResponse(BaseModel):
     status: str
     chunks_indexed: int
 
+# ---------------------------------------------------------------------------
+# Startup — blocks Uvicorn from accepting requests until both model & index
+# are fully loaded.  Any OOM or missing-file error crashes here with a clear
+# log rather than surfacing silently on the first user query.
+# ---------------------------------------------------------------------------
+
 @app.on_event("startup")
 def startup_event():
-    """
-    Startup sequence:
-    1. Pre-warm embedding model from local cache
-    2. Load pre-built FAISS index and chunk metadata (fails fast if missing)
-    3. Log initial memory RSS
-    """
-    logger.info("Initializing Athenaeum backend...")
-    get_embedding_model()
-    load_index_and_metadata()
-    logger.info("Athenaeum startup completed successfully.")
+    logger.info("[Startup] Athenaeum backend initialising...")
+    _retriever.initialise()   # loads model + index, logs RSS at each stage
+    logger.info("[Startup] Ready — model and index loaded.")
 
-# Mount Static Files
+# ---------------------------------------------------------------------------
+# Static files
+# ---------------------------------------------------------------------------
+
 static_path = Path(STATIC_DIR)
 if static_path.exists():
     app.mount("/static", StaticFiles(directory=str(static_path)), name="static")
 else:
-    logger.warning("Static directory not found at: %s", static_path)
+    logger.warning("[Startup] Static directory not found at: %s", static_path)
+
+# ---------------------------------------------------------------------------
+# Routes
+# ---------------------------------------------------------------------------
 
 @app.get("/", include_in_schema=False)
 async def serve_root():
@@ -82,88 +92,90 @@ async def serve_root():
     index_file = static_path / "index.html"
     if index_file.exists():
         return FileResponse(str(index_file))
-    raise HTTPException(status_code=404, detail="Index UI file not found in static folder.")
+    raise HTTPException(status_code=404, detail="Frontend index.html not found.")
+
 
 @app.get("/health")
 def health_check():
-    """Health check endpoint to report operational status to frontend nav bar."""
+    """
+    Returns 200 only after the embedding model and FAISS index are fully loaded.
+    Returns 503 while startup is still in progress or if initialisation failed.
+    The frontend polls this to know when the backend is ready to answer queries.
+    """
+    if not _retriever.is_ready():
+        raise HTTPException(
+            status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
+            detail="Backend is still initialising — model or index not yet loaded.",
+        )
     return {"status": "ok"}
+
 
 @app.post("/chat", response_model=ChatResponse)
 async def chat_endpoint(request: ChatRequest):
     """
-    RAG Chat endpoint:
-    1. Validates query
-    2. Retrieves top-k matching policy documentation chunks
-    3. Synthesizes grounded answer using Gemini (or canned response if no context matches)
-    4. Returns formatted answer and source citations
+    RAG Chat:
+    1. Retrieve top-k matching policy chunks via FAISS cosine search.
+    2. Synthesise a grounded answer with Gemini.
+    3. Return answer + cited source passages.
     """
     query = request.query.strip()
     if not query:
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
-            detail="Query cannot be empty or solely whitespace."
+            detail="Query cannot be empty.",
         )
 
     try:
-        # Retrieve relevant documentation chunks
-        retrieved_chunks = retrieve(query)
-
-        # Generate grounded response
+        retrieved_chunks = _retriever.retrieve(query)
         answer = generate_answer(query, retrieved_chunks)
 
-        # Format sources with truncated snippets (~150 chars) and clean doc names
         sources: List[SourceCitation] = []
         for chunk in retrieved_chunks:
             source_file = chunk.get("source_file", "library-docs")
             section = chunk.get("section")
             doc_label = f"{source_file} — {section}" if section else source_file
-
             raw_text = chunk.get("text", "").strip()
-            snippet = raw_text[:150] + "…" if len(raw_text) > 150 else raw_text
-            score = float(chunk.get("score", 0.0))
-
+            snippet = raw_text[:150] + "\u2026" if len(raw_text) > 150 else raw_text
             sources.append(SourceCitation(
                 doc=doc_label,
                 snippet=snippet,
-                score=score
+                score=float(chunk.get("score", 0.0)),
             ))
 
         return ChatResponse(answer=answer, sources=sources)
 
     except Exception as exc:
-        logger.error("Internal error processing /chat query '%s': %s", query, exc, exc_info=True)
+        logger.error("Error in /chat for query '%s': %s", query, exc, exc_info=True)
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail="Something went wrong processing your question."
+            detail="Something went wrong processing your question.",
         )
+
 
 @app.post("/ingest", response_model=IngestResponse)
 async def ingest_endpoint():
     """
-    Ingest endpoint to trigger FAISS index re-creation.
-    NOTE: In production, this endpoint MUST be protected with admin authorization.
+    Rebuild FAISS index from docs directory and reload into memory.
+    NOTE: protect this with admin auth before going to production.
     """
     try:
         from scripts.build_index import build_offline_index
         build_offline_index()
-        # Force reload in-memory retriever cache
-        global _cached_index, _cached_chunks
-        from app.rag import retriever
-        retriever._cached_index = None
-        retriever._cached_chunks = None
-        retriever.load_index_and_metadata()
-        chunks = retriever._cached_chunks or []
-        return IngestResponse(
-            status="ok",
-            chunks_indexed=len(chunks)
-        )
+        # Reset singletons so the next retrieve() picks up fresh files
+        _retriever._embedding_model = None
+        _retriever._cached_index = None
+        _retriever._cached_chunks = None
+        _retriever._ready = False
+        _retriever.initialise()
+        chunks = _retriever._cached_chunks or []
+        return IngestResponse(status="ok", chunks_indexed=len(chunks))
     except Exception as exc:
-        logger.error("Error during index ingestion: %s", exc, exc_info=True)
+        logger.error("Ingest failed: %s", exc, exc_info=True)
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail=f"Ingestion failed: {str(exc)}"
+            detail=f"Ingestion failed: {exc}",
         )
+
 
 if __name__ == "__main__":
     import uvicorn
