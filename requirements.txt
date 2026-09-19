@@ -4,5 +4,7 @@ python-dotenv
 google-generativeai
 fastembed
 faiss-cpu
+numpy
 pydantic
+psutil
 
