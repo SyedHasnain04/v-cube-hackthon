@@ -1,13 +1,3 @@
 {
-  "cleanUrls": true,
-  "rewrites": [
-    {
-      "source": "/chat",
-      "destination": "https://athenaeum-rag.onrender.com/chat"
-    },
-    {
-      "source": "/health",
-      "destination": "https://athenaeum-rag.onrender.com/health"
-    }
-  ]
+  "cleanUrls": true
 }

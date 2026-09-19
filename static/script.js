@@ -10,6 +10,11 @@ let messageCounter = 0;
 let loadingTimer = null;
 let healthRetryTimer = null;
 
+// Backend API Base URL (Direct connection to Render bypasses Vercel 10s gateway timeout)
+const API_BASE = (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1')
+  ? ''
+  : 'https://athenaeum-rag.onrender.com';
+
 // DOM Elements
 const chatPanel = document.getElementById('chat-panel');
 const chatForm = document.getElementById('chat-form');
@@ -34,15 +39,12 @@ function escapeHtml(str) {
  */
 async function checkHealth() {
   try {
-    const controller = new AbortController();
-    const timeoutId = setTimeout(() => controller.abort(), 8000);
+    statusDot.classList.add('pulse');
 
-    const response = await fetch('/health', {
+    const response = await fetch(`${API_BASE}/health`, {
       method: 'GET',
-      headers: { 'Accept': 'application/json' },
-      signal: controller.signal
+      headers: { 'Accept': 'application/json' }
     });
-    clearTimeout(timeoutId);
 
     if (response.ok) {
       const data = await response.json();
@@ -61,14 +63,14 @@ async function checkHealth() {
   } catch (err) {
     statusDot.classList.add('offline');
     statusDot.classList.remove('pulse');
-    statusText.textContent = 'Waking engine…';
+    statusText.textContent = 'Waking server…';
     
-    // Automatically retry pinging every 5 seconds until Render wakes up
+    // Automatically retry pinging every 6 seconds until Render wakes up
     if (!healthRetryTimer) {
       healthRetryTimer = setTimeout(() => {
         healthRetryTimer = null;
         checkHealth();
-      }, 5000);
+      }, 6000);
     }
   }
 }
@@ -129,7 +131,7 @@ function createSourcesElement(sources, messageId) {
 
   sources.forEach((source) => {
     const card = document.createElement('div');
-    card.className = 'source-card liquid-glass';
+    card.className = 'source-card';
 
     const header = document.createElement('div');
     header.className = 'source-card-header';
@@ -234,10 +236,20 @@ function showLoadingIndicator() {
   const loadingText = document.createElement('div');
   loadingText.className = 'loading-indicator';
   loadingText.id = 'loading-text';
-  loadingText.textContent = 'Athenaeum is thinking…';
+  loadingText.textContent = 'Searching the library documents…';
+
+  const skeleton = document.createElement('div');
+  skeleton.className = 'skeleton';
+  skeleton.setAttribute('aria-hidden', 'true');
+  for (let i = 0; i < 3; i++) {
+    const line = document.createElement('div');
+    line.className = 'skeleton-line';
+    skeleton.appendChild(line);
+  }
 
   assistantContent.appendChild(label);
   assistantContent.appendChild(loadingText);
+  assistantContent.appendChild(skeleton);
   loadingRow.appendChild(assistantContent);
 
   chatPanel.appendChild(loadingRow);
@@ -254,9 +266,9 @@ function showLoadingIndicator() {
       return;
     }
     if (elapsed >= 25) {
-      textEl.textContent = 'Formulating grounded answer from library records…';
+      textEl.textContent = 'Writing an answer from the matching passages…';
     } else if (elapsed >= 6) {
-      textEl.textContent = 'Waking library engine from sleep… (~25s)';
+      textEl.textContent = 'Server is waking from idle, about 25 seconds…';
     }
   }, 1000);
 }
@@ -290,7 +302,7 @@ async function sendMessage(query) {
   showLoadingIndicator();
 
   try {
-    const response = await fetch('/chat', {
+    const response = await fetch(`${API_BASE}/chat`, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',

@@ -3,152 +3,151 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <meta name="description" content="Athenaeum — An intelligent RAG assistant for your library. Ask questions regarding membership, borrowing, overdue policies, and digital resources.">
+  <meta name="theme-color" content="#0b151c">
   <title>Athenaeum — Library Assistant</title>
+  <meta name="description" content="Athenaeum answers questions about library membership, borrowing, overdue policies and digital resources, grounded in the library's own documentation with cited sources.">
+  <meta property="og:type" content="website">
+  <meta property="og:title" content="Athenaeum — Library Assistant">
+  <meta property="og:description" content="Grounded answers about library policies, with the source passages shown next to every reply.">
+  <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Crect width='64' height='64' rx='14' fill='%230b151c'/%3E%3Ctext x='32' y='47' text-anchor='middle' font-family='Georgia,serif' font-style='italic' font-size='44' fill='%23d4a95f'%3EA%3C/text%3E%3C/svg%3E">
+
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Geist:wght@400;500;600&family=Geist+Mono:wght@400;500&family=Instrument+Serif:ital@0;1&display=swap">
   <!-- FastAPI mount: app.mount("/static", StaticFiles(directory="static"), name="static") -->
   <link rel="stylesheet" href="/static/style.css">
 </head>
 <body>
-  <!-- Atmospheric Video Background -->
-  <video class="video-bg" autoplay loop muted playsinline>
+  <a class="skip-link" href="#chat-section">Skip to chat</a>
+
+  <!-- Atmospheric video background (hidden for reduced-motion users) -->
+  <video class="video-bg" autoplay loop muted playsinline preload="metadata" aria-hidden="true">
     <source src="https://d8j0ntlcm91z4.cloudfront.net/user_38xzZboKViGWJOttwIXH07lWA1P/hf_20260314_131748_f2ca2a28-fed7-44c8-b9a9-bd9acdd5ec31.mp4" type="video/mp4">
   </video>
-  <div class="video-overlay"></div>
+  <div class="video-overlay" aria-hidden="true"></div>
 
-  <!-- Main Application Wrapper -->
   <div class="app-container">
-    <!-- Navigation Bar -->
     <header class="nav-wrapper">
-      <nav class="nav-bar liquid-glass" aria-label="Main Navigation">
+      <nav class="nav-bar" aria-label="Main navigation">
         <a href="/" class="nav-logo" id="nav-logo">Athenaeum</a>
-        <div class="nav-status" id="system-status" aria-live="polite">
-          <span class="status-dot pulse" id="status-dot"></span>
-          <span id="status-text">Online</span>
+        <div class="nav-right">
+          <a class="nav-link" href="https://github.com/SyedHasnain04/v-cube-hackthon" target="_blank" rel="noopener">Source</a>
+          <div class="nav-status" id="system-status" aria-live="polite">
+            <span class="status-dot pulse" id="status-dot"></span>
+            <span id="status-text">Online</span>
+          </div>
         </div>
       </nav>
     </header>
 
-    <!-- Header / Intro (Compact) -->
-    <section class="hero-header">
-      <h1 class="animate-fade-rise">Ask anything about the library.</h1>
-      <p class="animate-fade-rise-delay">
-        Membership rules, borrowing procedures, overdue policies, and digital resources — answered from the library's own documentation.
-      </p>
-    </section>
+    <main class="layout" id="main">
+      <!-- Left column: what it is and how it works -->
+      <div class="intro">
+        <section class="hero-header" aria-labelledby="hero-title">
+          <p class="eyebrow animate-fade-rise">Library policy assistant</p>
+          <h1 id="hero-title" class="animate-fade-rise">Ask anything about the library.</h1>
+          <p class="hero-lede animate-fade-rise-delay">
+            Membership rules, borrowing limits, overdue fines and digital access. Every answer is drawn from the library's own documentation, with the passages it used shown alongside.
+          </p>
+        </section>
 
-    <!-- Architecture & RAG Explanation Briefing -->
-    <section class="rag-briefing liquid-glass animate-fade-rise-delay">
-      <div class="briefing-badge">Architecture & Verification</div>
-      <h2 class="briefing-title">Why Retrieval-Augmented Generation (RAG)?</h2>
-      <p class="briefing-desc">
-        General AI models hallucinate circulation limits and fees. <strong>Athenaeum</strong> searches verified policy documentation using vector embeddings before formulating an answer, delivering grounded facts with verifiable citations and match scores.
-      </p>
+        <section class="rag-briefing animate-fade-rise-delay" aria-labelledby="briefing-title">
+          <h2 id="briefing-title" class="briefing-title">How answers are grounded</h2>
+          <p class="briefing-desc">
+            General-purpose models tend to invent circulation limits and fees. <strong>Athenaeum</strong> first searches the policy documents, then writes an answer only from what it found.
+          </p>
 
-      <div class="pipeline-grid">
-        <div class="pipeline-card">
-          <div class="pipeline-step">01</div>
-          <div class="pipeline-content">
-            <h3>Document Ingestion</h3>
-            <p>Official library policies chunked with section header hierarchy preserved.</p>
+          <ol class="pipeline-list">
+            <li class="pipeline-item">
+              <span class="pipeline-step">01</span>
+              <div class="pipeline-content">
+                <h3>Document ingestion</h3>
+                <p>Policies are split into chunks that keep their section headings.</p>
+              </div>
+            </li>
+            <li class="pipeline-item">
+              <span class="pipeline-step">02</span>
+              <div class="pipeline-content">
+                <h3>Vector retrieval</h3>
+                <p><code>all-MiniLM-L6-v2</code> embeddings and a <strong>FAISS</strong> cosine-similarity index find the matching clauses.</p>
+              </div>
+            </li>
+            <li class="pipeline-item">
+              <span class="pipeline-step">03</span>
+              <div class="pipeline-content">
+                <h3>Guarded synthesis</h3>
+                <p><strong>Gemini 2.5 Flash</strong> answers from the retrieved text and returns a match score per source.</p>
+              </div>
+            </li>
+          </ol>
+
+          <div class="example-questions-box">
+            <h3 class="example-questions-title">Try one of these</h3>
+            <ul class="interactive-questions-list">
+              <li><button type="button" class="ask-chip-row">
+                <span>How many books can I borrow at once?</span>
+                <span class="category-pill">Borrowing</span>
+              </button></li>
+              <li><button type="button" class="ask-chip-row">
+                <span>What documents do I need to register for a library card?</span>
+                <span class="category-pill">Membership</span>
+              </button></li>
+              <li><button type="button" class="ask-chip-row">
+                <span>What happens if an item is overdue for more than 30 days?</span>
+                <span class="category-pill">Overdue</span>
+              </button></li>
+              <li><button type="button" class="ask-chip-row">
+                <span>How many streaming credits do I get on Hoopla and Kanopy each month?</span>
+                <span class="category-pill">Digital</span>
+              </button></li>
+            </ul>
           </div>
-        </div>
-        <div class="pipeline-card">
-          <div class="pipeline-step">02</div>
-          <div class="pipeline-content">
-            <h3>Vector Retrieval</h3>
-            <p><code>all-MiniLM-L6-v2</code> embeddings & <strong>FAISS</strong> cosine similarity locate exact clauses.</p>
-          </div>
-        </div>
-        <div class="pipeline-card">
-          <div class="pipeline-step">03</div>
-          <div class="pipeline-content">
-            <h3>Guarded Synthesis</h3>
-            <p><strong>Gemini 2.5 Flash</strong> synthesizes with strict guardrails and transparent match citations.</p>
-          </div>
-        </div>
+
+          <p class="briefing-note">
+            <span class="pulse-mini-dot" aria-hidden="true"></span>
+            <span>Hosted on a free tier: the first reply after a quiet spell can take about 25 seconds.</span>
+          </p>
+        </section>
       </div>
 
-      <!-- Example Questions Explorer -->
-      <div class="example-questions-box">
-        <div class="example-questions-header">
-          <span>Click any example to test:</span>
-          <div class="category-tags">
-            <span class="category-tag">💳 Membership</span>
-            <span class="category-tag">📚 Borrowing</span>
-            <span class="category-tag">⏳ Overdue</span>
-            <span class="category-tag">📱 Digital</span>
+      <!-- Right column: the product -->
+      <section class="chat-section" id="chat-section" aria-label="Chat with Athenaeum">
+        <div class="chat-panel liquid-glass" id="chat-panel" role="log" aria-live="polite" aria-label="Conversation">
+          <div class="chat-empty-state" id="empty-state">
+            <p class="empty-title">Start with a question.</p>
+            <p class="empty-copy">Answers cite the document and section they came from.</p>
+            <div class="suggestion-chips" id="suggestion-chips">
+              <button type="button" class="suggestion-chip">How do I renew a book?</button>
+              <button type="button" class="suggestion-chip">Are there overdue late fines?</button>
+              <button type="button" class="suggestion-chip">How do I use Libby for e-books?</button>
+            </div>
           </div>
         </div>
 
-        <div class="interactive-questions-list">
-          <button type="button" class="ask-chip-row">
-            <span>How many books can I borrow at once?</span>
-            <span class="category-pill">Borrowing</span>
-          </button>
-          <button type="button" class="ask-chip-row">
-            <span>How do I register for a library card and what documents are required?</span>
-            <span class="category-pill">Membership</span>
-          </button>
-          <button type="button" class="ask-chip-row">
-            <span>Are there late fines for returning books overdue?</span>
-            <span class="category-pill">Overdue</span>
-          </button>
-          <button type="button" class="ask-chip-row">
-            <span>How do I access digital e-books and audiobooks on Libby?</span>
-            <span class="category-pill">Digital</span>
-          </button>
-        </div>
-      </div>
-
-      <div class="briefing-action-row">
-        <div class="briefing-note">
-          <span class="pulse-mini-dot"></span>
-          <span>Engine warmup active in background — ready for immediate responses.</span>
-        </div>
-        <a href="#chat-section" class="scroll-to-chat-btn" id="start-asking-btn">
-          Open Chat Assistant ↓
-        </a>
-      </div>
-    </section>
-
-    <!-- Chat Interface -->
-    <main class="chat-section" id="chat-section">
-      <div class="chat-panel liquid-glass" id="chat-panel" role="log" aria-live="polite">
-        <div class="chat-empty-state" id="empty-state">
-          <p>No messages yet. Ask a question below or choose a topic to begin:</p>
-          <div class="suggestion-chips" id="suggestion-chips">
-            <button type="button" class="suggestion-chip">How many books can I borrow at once?</button>
-            <button type="button" class="suggestion-chip">How do I register for a library card?</button>
-            <button type="button" class="suggestion-chip">Are there overdue late fines?</button>
-            <button type="button" class="suggestion-chip">How do I access Libby and digital e-books?</button>
+        <form class="input-form" id="chat-form" autocomplete="off">
+          <div class="input-bar liquid-glass">
+            <input
+              type="text"
+              id="chat-input"
+              class="chat-input"
+              placeholder="Ask about fines, loans, cards…"
+              required
+              aria-label="Ask a question about the library"
+            />
+            <button type="submit" class="send-btn" id="send-btn" aria-label="Send message">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                <line x1="12" y1="19" x2="12" y2="5"></line>
+                <polyline points="5 12 12 5 19 12"></polyline>
+              </svg>
+            </button>
           </div>
-        </div>
-      </div>
-
-      <!-- Input Bar Form -->
-      <form class="input-form" id="chat-form" autocomplete="off">
-        <div class="input-bar liquid-glass">
-          <input
-            type="text"
-            id="chat-input"
-            class="chat-input"
-            placeholder="e.g. How many books can I borrow at once?"
-            required
-            aria-label="Ask a question about the library"
-          />
-          <button type="submit" class="send-btn" id="send-btn" aria-label="Send message">
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round">
-              <line x1="22" y1="2" x2="11" y2="13"></line>
-              <polygon points="22 2 15 22 11 13 2 9 22 2"></polygon>
-            </svg>
-          </button>
-        </div>
-      </form>
+        </form>
+      </section>
     </main>
 
-    <!-- Footer -->
     <footer class="app-footer">
-      Athenaeum — grounded answers from your library's documentation.
+      <span>Athenaeum answers from sample library documentation and is a demo, not an official library service.</span>
+      <a href="https://github.com/SyedHasnain04/v-cube-hackthon" target="_blank" rel="noopener">View source</a>
     </footer>
   </div>
 
