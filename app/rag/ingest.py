@@ -17,6 +17,11 @@ from app.config import (
     EMBEDDING_MODEL
 )
 
+# Import fastembed lazily to avoid loading model at import time
+def _get_fastembed_model():
+    from fastembed import TextEmbedding
+    return TextEmbedding(model_name=EMBEDDING_MODEL)
+
 def load_documents(docs_dir: str = DOCS_DIR) -> List[Dict[str, str]]:
     """
     Read all .md and .txt files from the docs directory.
@@ -104,7 +109,6 @@ def build_index() -> Dict[str, Any]:
     """
     import numpy as np
     import faiss
-    from sentence_transformers import SentenceTransformer
 
     print(f"Loading documents from: {DOCS_DIR}")
     docs = load_documents(DOCS_DIR)
@@ -125,12 +129,11 @@ def build_index() -> Dict[str, Any]:
         raise RuntimeError("No chunks created from loaded documents.")
 
     print(f"Loading embedding model: {EMBEDDING_MODEL}")
-    model = SentenceTransformer(EMBEDDING_MODEL)
+    model = _get_fastembed_model()
 
     chunk_texts = [c["text"] for c in all_chunks]
     print(f"Embedding {len(chunk_texts)} chunks...")
-    embeddings = model.encode(chunk_texts, show_progress_bar=False, convert_to_numpy=True)
-    embeddings = embeddings.astype(np.float32)
+    embeddings = np.array(list(model.embed(chunk_texts)), dtype=np.float32)
 
     # L2-normalize vectors so Inner Product = Cosine Similarity
     faiss.normalize_L2(embeddings)
