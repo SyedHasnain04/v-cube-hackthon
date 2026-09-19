@@ -2,6 +2,7 @@ fastapi
 uvicorn[standard]
 python-dotenv
 google-generativeai
-sentence-transformers
+fastembed
 faiss-cpu
 pydantic
+

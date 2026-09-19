@@ -15,9 +15,8 @@ from fastapi.responses import FileResponse
 from pydantic import BaseModel, Field
 
 from app.config import STATIC_DIR
-from app.rag.retriever import retrieve, load_index_and_metadata
+from app.rag.retriever import retrieve, load_index_and_metadata, get_embedding_model
 from app.rag.generator import generate_answer
-from app.rag.ingest import build_index
 
 # Setup Server-side Logging
 logging.basicConfig(
@@ -32,7 +31,6 @@ app = FastAPI(
 )
 
 # CORS Configuration
-# Note: Allow all origins for development and local testing. Restrict to specific domains in production.
 app.add_middleware(
     CORSMiddleware,
     allow_origins=["*"],
@@ -57,6 +55,19 @@ class ChatResponse(BaseModel):
 class IngestResponse(BaseModel):
     status: str
     chunks_indexed: int
+
+@app.on_event("startup")
+def startup_event():
+    """
+    Startup sequence:
+    1. Pre-warm embedding model from local cache
+    2. Load pre-built FAISS index and chunk metadata (fails fast if missing)
+    3. Log initial memory RSS
+    """
+    logger.info("Initializing Athenaeum backend...")
+    get_embedding_model()
+    load_index_and_metadata()
+    logger.info("Athenaeum startup completed successfully.")
 
 # Mount Static Files
 static_path = Path(STATIC_DIR)
@@ -121,7 +132,6 @@ async def chat_endpoint(request: ChatRequest):
         return ChatResponse(answer=answer, sources=sources)
 
     except Exception as exc:
-        # Log complete stack trace server-side only; never leak internal keys or trace to user
         logger.error("Internal error processing /chat query '%s': %s", query, exc, exc_info=True)
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
@@ -135,12 +145,18 @@ async def ingest_endpoint():
     NOTE: In production, this endpoint MUST be protected with admin authorization.
     """
     try:
-        summary = build_index()
+        from scripts.build_index import build_offline_index
+        build_offline_index()
         # Force reload in-memory retriever cache
-        load_index_and_metadata(force_reload=True)
+        global _cached_index, _cached_chunks
+        from app.rag import retriever
+        retriever._cached_index = None
+        retriever._cached_chunks = None
+        retriever.load_index_and_metadata()
+        chunks = retriever._cached_chunks or []
         return IngestResponse(
             status="ok",
-            chunks_indexed=summary.get("chunks_indexed", 0)
+            chunks_indexed=len(chunks)
         )
     except Exception as exc:
         logger.error("Error during index ingestion: %s", exc, exc_info=True)

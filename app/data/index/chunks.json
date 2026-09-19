@@ -1,0 +1,74 @@
+[
+  {
+    "text": "# Library Borrowing and Circulation Policies\n<!-- Sample documentation for Athenaeum RAG demonstration -->",
+    "source_file": "borrowing.md",
+    "section": "Overview",
+    "id": 0
+  },
+  {
+    "text": "Standard adult library cardholders in good standing may borrow up to 25 items simultaneously across all physical formats. Specific category sub-limits include:\n- Up to 15 print books and paperbacks\n- Up to 5 audiobooks on CD or Playaway formats\n- Up to 5 feature film or documentary DVDs/Blu-rays\n- Up to 2 technology equipment kits or museum family passes\n\nYouth and student cardholders have a total borrowing capacity of 10 physical items concurrently.",
+    "source_file": "borrowing.md",
+    "section": "Loan Limits and Item Capacities",
+    "id": 1
+  },
+  {
+    "text": "- **General Collection Books**: 21 days\n- **New Release Fiction & Bestsellers**: 14 days\n- **Periodicals and Magazines**: 14 days (current display issues remain in-library only)\n- **Audiobooks & Music CDs**: 21 days\n- **DVDs and Blu-rays**: 7 days\n- **Equipment and Kits**: 7 days",
+    "source_file": "borrowing.md",
+    "section": "Loan Periods",
+    "id": 2
+  },
+  {
+    "text": "Eligible items may be renewed up to three times, provided there are no active hold reservations placed by other patrons. Automatic renewals occur 48 hours prior to the due date for items that qualify. Renewals can also be processed online through the patron portal, by telephone, or via self-checkout kiosks. Patrons can place holds on up to 10 circulating items at any time; items on hold will be reserved for 7 calendar days after patron notification.",
+    "source_file": "borrowing.md",
+    "section": "Renewals and Hold Requests",
+    "id": 3
+  },
+  {
+    "text": "# Library Membership Guidelines\n<!-- Sample documentation for Athenaeum RAG demonstration -->",
+    "source_file": "membership.md",
+    "section": "Overview",
+    "id": 4
+  },
+  {
+    "text": "All individuals residing, working, or attending school within the municipal district are eligible for a free Athenaeum public library card. To register for a standard card, applicants must present a valid government-issued photo ID (such as a driver's license or passport) alongside current proof of residency (such as a utility bill or lease agreement issued within the past 60 days). Registration forms may be initiated online or completed in person at any library service desk.",
+    "source_file": "membership.md",
+    "section": "Eligibility and Registration",
+    "id": 5
+  },
+  {
+    "text": "- **Resident Card**: Full borrowing and digital access privileges for all local residents. Cards remain active for two years and can be renewed with verified proof of address.\n- **Youth & Student Cards**: Available to minors under 18 years of age. A parent or legal guardian must co-sign the registration and accepts responsibility for borrowed materials.\n- **Non-Resident Visitor Card**: Individuals residing outside the district service zone can obtain a non-resident card for an annual fee of $35, granting physical borrowing and select on-site digital database access.\n- **Educator Pass**: Teachers, homeschool instructors, and educational facilitators are eligible for extended loan terms and higher item volume limits upon presenting educational credentials.",
+    "source_file": "membership.md",
+    "section": "Membership Categories",
+    "id": 6
+  },
+  {
+    "text": "Library cards are non-transferable and must be presented (or scanned via the library mobile barcode) to check out items. If a card is lost or stolen, members must notify the library circulation department immediately to freeze the account against unauthorized use. A replacement card may be issued for a administrative fee of $2.",
+    "source_file": "membership.md",
+    "section": "Account Management and Card Replacement",
+    "id": 7
+  },
+  {
+    "text": "# Overdue Policies and Digital Resources\n<!-- Sample documentation for Athenaeum RAG demonstration -->",
+    "source_file": "overdue-and-digital.md",
+    "section": "Overview",
+    "id": 8
+  },
+  {
+    "text": "The Athenaeum operates under a fine-free circulation model for all standard circulating books and audiovisual materials. Courtesy reminders are transmitted via email or SMS at 3 days before the due date, and formal overdue notices are dispatched at 7 and 14 days overdue. If an item is more than 30 days overdue, it is declared lost, and an automated replacement fee equal to the publisher's list price plus a $5 cataloging fee is charged. Returning the overdue item in undamaged condition completely waives the replacement fee.",
+    "source_file": "overdue-and-digital.md",
+    "section": "Overdue Guidelines and Fine-Free Policy",
+    "id": 9
+  },
+  {
+    "text": "All active cardholders have 24/7 access to digital library platforms:\n- **Libby / OverDrive**: Borrow up to 10 e-books and digital audiobooks at a time with loan durations of 7, 14, or 21 days. Digital items return automatically on their due date, precluding any late fees.\n- **Hoopla Digital**: Instant streaming access to movies, television series, music albums, and comics. Members receive 5 instant checkout credits per calendar month.\n- **Kanopy**: Stream high-quality independent cinema, foreign films, and educational documentaries with 15 monthly play credits.",
+    "source_file": "overdue-and-digital.md",
+    "section": "E-Books, Audiobooks, and Streaming Access",
+    "id": 10
+  },
+  {
+    "text": "Access academic journals and premium learning databases including JSTOR, EBSCOhost, Gale Literature, and Morningstar Financial directly through the library website. To authenticate, patrons simply input their 14-digit library card barcode and 4-digit PIN (defaulting to the last four digits of their primary registered phone number).",
+    "source_file": "overdue-and-digital.md",
+    "section": "Research Databases and Digital Logins",
+    "id": 11
+  }
+]

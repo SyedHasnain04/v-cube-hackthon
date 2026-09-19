@@ -7,6 +7,9 @@ import os
 from pathlib import Path
 from dotenv import load_dotenv
 
+# Runtime settings: limit threads for lightweight execution on low memory instances
+os.environ.setdefault("OMP_NUM_THREADS", "1")
+
 # Base paths
 APP_DIR = Path(__file__).resolve().parent
 PROJECT_ROOT = APP_DIR.parent
@@ -37,10 +40,13 @@ CHUNK_SIZE: int = 400            # tokens/words
 CHUNK_OVERLAP: int = 50          # overlapping words between chunks
 TOP_K: int = 4                   # top k retrieved chunks
 MIN_SIMILARITY: float = 0.35     # minimum cosine similarity threshold
-EMBEDDING_MODEL: str = "all-MiniLM-L6-v2"
+EMBEDDING_MODEL: str = "sentence-transformers/all-MiniLM-L6-v2"
 GEMINI_MODEL: str = "gemini-2.5-flash"
 
-# Directories
+# Directories & Pre-built Index paths
 INDEX_DIR: str = str(APP_DIR / "data" / "index")
+FAISS_INDEX_PATH: str = str(APP_DIR / "data" / "index" / "faiss.index")
+CHUNKS_JSON_PATH: str = str(APP_DIR / "data" / "index" / "chunks.json")
 DOCS_DIR: str = str(APP_DIR / "data" / "docs")
 STATIC_DIR: str = str(PROJECT_ROOT / "static")
+MODEL_CACHE_DIR: str = os.getenv("FASTEMBED_CACHE_DIR", str(PROJECT_ROOT / "models"))

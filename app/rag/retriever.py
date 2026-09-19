@@ -1,84 +1,118 @@
 """
 Vector similarity retriever module for Athenaeum.
-Loads FAISS index and chunk metadata, embeds incoming query, and returns top-k matching chunks.
+Uses fastembed ONNX runtime, FAISS index, and lru_cache for query embeddings.
 """
 
 import os
 import json
+import logging
 from pathlib import Path
+from functools import lru_cache
 from typing import List, Dict, Any, Optional
 
+import numpy as np
+import faiss
+import psutil
+from fastembed import TextEmbedding
+
 from app.config import (
-    INDEX_DIR,
     TOP_K,
     MIN_SIMILARITY,
-    EMBEDDING_MODEL
+    EMBEDDING_MODEL,
+    MODEL_CACHE_DIR,
+    FAISS_INDEX_PATH,
+    CHUNKS_JSON_PATH
 )
 
-_cached_index = None
-_cached_chunks = None
-_cached_model = None
+logger = logging.getLogger("athenaeum.retriever")
 
-def get_embedding_model():
-    """Lazily load and cache the SentenceTransformer model."""
-    global _cached_model
-    if _cached_model is None:
-        from sentence_transformers import SentenceTransformer
-        _cached_model = SentenceTransformer(EMBEDDING_MODEL)
-    return _cached_model
+def get_rss_mb() -> float:
+    """Return process resident memory in megabytes."""
+    return psutil.Process().memory_info().rss / (1024 * 1024)
 
-def load_index_and_metadata(force_reload: bool = False):
+def log_rss(stage: str):
+    """Log current RSS memory usage."""
+    logger.info("[Memory] %s: RSS = %.2f MB", stage, get_rss_mb())
+
+# Log memory after imports
+log_rss("After retriever imports")
+
+# Module-level singletons
+_embedding_model: Optional[TextEmbedding] = None
+_cached_index: Optional[faiss.Index] = None
+_cached_chunks: Optional[List[Dict[str, Any]]] = None
+_first_query_logged: bool = False
+
+def get_embedding_model() -> TextEmbedding:
+    """Load and return module-level singleton TextEmbedding model."""
+    global _embedding_model
+    if _embedding_model is None:
+        logger.info("Initializing fastembed model: %s (cache_dir=%s)", EMBEDDING_MODEL, MODEL_CACHE_DIR)
+        _embedding_model = TextEmbedding(
+            model_name=EMBEDDING_MODEL,
+            cache_dir=MODEL_CACHE_DIR,
+            threads=1
+        )
+        log_rss("After embedding model load")
+    return _embedding_model
+
+def load_index_and_metadata():
     """
-    Load the FAISS index and chunk metadata from disk.
-    Caches in memory for subsequent fast queries.
-    Raises RuntimeError if index files are missing.
+    Load pre-built FAISS index and chunk metadata from disk.
+    Fails fast if index files are missing (no build-on-boot).
     """
     global _cached_index, _cached_chunks
-    if not force_reload and _cached_index is not None and _cached_chunks is not None:
+    if _cached_index is not None and _cached_chunks is not None:
         return _cached_index, _cached_chunks
 
-    import faiss
-
-    index_dir_path = Path(INDEX_DIR)
-    faiss_file = index_dir_path / "faiss.index"
-    chunks_file = index_dir_path / "chunks.json"
+    faiss_file = Path(FAISS_INDEX_PATH)
+    chunks_file = Path(CHUNKS_JSON_PATH)
 
     if not faiss_file.exists() or not chunks_file.exists():
-        from app.rag.ingest import build_index
-        print("[Athenaeum] Index files not found. Auto-building index from docs...")
-        build_index()
+        raise FileNotFoundError(
+            f"Pre-built index files missing.\n"
+            f"Expected:\n"
+            f"  - {faiss_file}\n"
+            f"  - {chunks_file}\n"
+            "Build-on-boot is disabled to protect Render free-tier RAM.\n"
+            "Please run 'python scripts/build_index.py' to generate and commit the index files."
+        )
 
     try:
-        index = faiss.read_index(str(faiss_file))
+        _cached_index = faiss.read_index(str(faiss_file))
         with open(chunks_file, "r", encoding="utf-8") as f:
-            chunks = json.load(f)
+            _cached_chunks = json.load(f)
 
-        _cached_index = index
-        _cached_chunks = chunks
+        log_rss("After FAISS index & metadata load")
         return _cached_index, _cached_chunks
     except Exception as e:
-        raise RuntimeError(f"Error loading index or chunks from {INDEX_DIR}: {e}")
+        raise RuntimeError(f"Error loading index or chunks: {e}")
+
+@lru_cache(maxsize=256)
+def _embed_query_cached(query_text: str) -> tuple:
+    """Embed query with fastembed and cache representation as a tuple."""
+    model = get_embedding_model()
+    # Fastembed embed returns a generator
+    raw_emb = next(model.embed([query_text])).astype(np.float32)
+    return tuple(raw_emb.tolist())
+
+def get_query_embedding(query: str) -> np.ndarray:
+    """Get query embedding, L2 normalize, and return as (1, dim) float32 numpy array."""
+    emb_tuple = _embed_query_cached(query)
+    q_emb = np.array([emb_tuple], dtype=np.float32)
+    faiss.normalize_L2(q_emb)
+    return q_emb
 
 def retrieve(query: str, top_k: int = TOP_K) -> List[Dict[str, Any]]:
     """
-    Embed query with SentenceTransformer, normalize L2, search FAISS index,
-    and return filtered top-k results with cosine similarity score.
+    Retrieve top-k matching document chunks for the query using FAISS cosine similarity.
     """
+    global _first_query_logged
     if not query or not query.strip():
         return []
 
-    import numpy as np
-    import faiss
-
     index, chunks = load_index_and_metadata()
-    model = get_embedding_model()
-
-    # Embed query
-    q_emb = model.encode([query.strip()], show_progress_bar=False, convert_to_numpy=True)
-    q_emb = q_emb.astype(np.float32)
-
-    # Normalize vector for cosine similarity
-    faiss.normalize_L2(q_emb)
+    q_emb = get_query_embedding(query.strip())
 
     actual_k = min(top_k, index.ntotal)
     if actual_k <= 0:
@@ -91,13 +125,16 @@ def retrieve(query: str, top_k: int = TOP_K) -> List[Dict[str, Any]]:
         if idx == -1:
             continue
         sim_score = float(score)
-        # Filter by minimum similarity threshold
         if sim_score >= MIN_SIMILARITY:
             if idx < len(chunks):
                 chunk_data = dict(chunks[idx])
                 chunk_data["score"] = round(sim_score, 4)
                 results.append(chunk_data)
 
-    # Sort descending by score
     results.sort(key=lambda x: x["score"], reverse=True)
+
+    if not _first_query_logged:
+        _first_query_logged = True
+        log_rss("After first query execution")
+
     return results
